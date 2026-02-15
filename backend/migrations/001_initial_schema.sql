@@ -17,8 +17,6 @@ CREATE TABLE IF NOT EXISTS counters (
     updated_at TEXT NOT NULL
 );
 
--- initialise counters
+-- initialise counter (only one now: completed cycles)
 INSERT OR IGNORE INTO counters (metric, count, updated_at) 
-VALUES 
-    ('signups', 0, datetime('now')),
-    ('deletions', 0, datetime('now'));
+VALUES ('completed_cycles', 0, datetime('now'));

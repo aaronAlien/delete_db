@@ -6,28 +6,33 @@ export const signup = (req: Request, res: Response): void => {
   try {
     const { name, email } = req.body;
 
-    console.log('signup request:', { name, email }); // debug log
+    console.log('signup request:', { name, email });
 
     // validate name first
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
+      console.log('validation failed: name required');
       res.status(400).json({ error: 'name required' });
       return;
     }
 
     // validate email second
     if (!email || typeof email !== 'string' || !email.includes('@')) {
+      console.log('validation failed: valid email required');
       res.status(400).json({ error: 'valid email required' });
       return;
     }
 
     // check if email already exists
     if (emailExists(email)) {
+      console.log('validation failed: email already registered');
       res.status(409).json({ error: 'email already registered' });
       return;
     }
 
     // create user
+    console.log('about to create user...');
     const { token } = createUser(name.trim(), email);
+    console.log('user created successfully, token:', token);
 
     res.status(201).json({ 
       message: 'user created',

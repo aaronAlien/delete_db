@@ -55,6 +55,6 @@ export const api = {
       throw new Error('failed to fetch counters');
     }
     
-    return response.json();
+    return response.json() as Promise<{ completedCycles: number }>;
   },
 };
