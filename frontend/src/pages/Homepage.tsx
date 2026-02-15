@@ -1,69 +1,274 @@
-import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { api } from '../lib/api';
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { api } from "../lib/api";
+import LogoutModal from "../components/LogoutModal";
 
 export default function Homepage() {
   const { token } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+  const [expiresAt, setExpiresAt] = useState<string | null>(null);
 
-  const handleLogout = async () => {
+  // check session - set expiry time
+  useEffect(() => {
+    const checkSession = async () => {
+      if (!token) return;
+
+      try {
+        const response = await fetch(`/api/session/${token}`);
+        const data = await response.json();
+
+        if (data.expired) {
+          // session expired - redirect to deleted page
+          navigate("/deleted?expired=true");
+        } else if (data.expiresAt) {
+          setExpiresAt(data.expiresAt);
+        }
+      } catch (error) {
+        console.error("failed to check session:", error);
+      }
+    };
+
+    checkSession();
+  }, [token, navigate]);
+
+  // countdown timer
+  useEffect(() => {
+    if (!expiresAt) return;
+
+    const interval = setInterval(() => {
+      const now = new Date().getTime();
+      const expiry = new Date(expiresAt).getTime();
+      const remaining = expiry - now;
+
+      if (remaining <= 0) {
+        // session expired
+        clearInterval(interval);
+        navigate("/deleted?expired=true");
+      } else {
+        setTimeRemaining(Math.floor(remaining / 1000)); // to seconds
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [expiresAt, navigate]);
+
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  const handleLogoutClick = () => {
+    setShowModal(true);
+  };
+
+  const handleLogoutConfirm = async () => {
     if (!token) return;
 
     setLoading(true);
 
     try {
       await api.logout(token);
-      // redirect to signup page
-      navigate('/');
+      navigate("/deleted?expired=false");
     } catch (err: any) {
-      console.error('logout failed:', err);
-      alert('logout failed');
+      console.error("logout failed:", err);
+      alert("logout failed");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* navbar */}
-      <nav className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="text-xl font-bold text-gray-900">privacy app</div>
+    <>
+      <div className='min-h-screen bg-gray-50'>
+        {/* navbar */}
+        <nav className='bg-white border-b border-gray-200'>
+          <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
+            <div className='flex justify-between items-center h-16'>
+              <div className='text-xl font-bold text-gray-900'>privacy app</div>
+
+              <div className='flex items-center gap-4'>
+                {/* timer */}
+                {timeRemaining !== null && (
+                  <div className='flex items-center gap-2 text-sm'>
+                    <span className='text-gray-600'>session expires in:</span>
+                    <span className='font-mono font-bold text-red-600'>
+                      {formatTime(timeRemaining)}
+                    </span>
+                  </div>
+                )}
+
+                <button
+                  onClick={handleLogoutClick}
+                  className='px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg'
+                >
+                  logout
+                </button>
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        {/* main content */}
+        <div className='max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12'>
+          {/* welcome section */}
+          <div className='text-center space-y-4'>
+            <h1 className='text-4xl font-bold text-gray-900'>
+              welcome to the app!
+            </h1>
+            <p className='text-lg text-gray-600'>
+              you're now logged in. your session will expire in 5 minutes, or
+              you can logout manually.
+            </p>
+          </div>
+
+          {/* explain project */}
+          <div className='bg-white border border-gray-200 rounded-lg p-8 space-y-6'>
+            <div>
+              <h2 className='text-2xl font-bold text-gray-900 mb-3'>
+                about this project
+              </h2>
+              <p className='text-gray-700 leading-relaxed'>
+                this is a full-stack demonstration of privacy-first
+                architecture. unlike traditional applications that retain user
+                data indefinitely, this system deliberately implements automatic
+                data deletion to showcase responsible data handling practices.
+              </p>
+            </div>
+
+            <div>
+              <h3 className='text-lg font-semibold text-gray-900 mb-3'>
+                how it works
+              </h3>
+              <div className='space-y-2 text-gray-700'>
+                <p>
+                  <span className='font-medium'>1. sign up:</span> user provides
+                  name and email
+                </p>
+                <p>
+                  <span className='font-medium'>2. confirmation:</span> email
+                  verification flow (simulated)
+                </p>
+                <p>
+                  <span className='font-medium'>3. session start:</span>{" "}
+                  5-minute temporary session begins
+                </p>
+                <p>
+                  <span className='font-medium'>4. automatic deletion:</span>{" "}
+                  data removed on logout or timeout
+                </p>
+                <p>
+                  <span className='font-medium'>5. metrics only:</span> only
+                  aggregate counters persist
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <h3 className='text-lg font-semibold text-gray-900 mb-3'>
+                privacy features
+              </h3>
+              <ul className='space-y-2 text-gray-700'>
+                <li>
+                  ✓ email addresses are hashed using sha-256 (never stored in
+                  plain text)
+                </li>
+                <li>✓ user data automatically expires after 5 minutes</li>
+                <li>✓ manual logout triggers immediate deletion</li>
+                <li>✓ database transactions ensure data consistency</li>
+                <li>✓ only anonymised aggregate metrics are retained</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* tech stack */}
+          <div className='bg-blue-50 border border-blue-200 rounded-lg p-8 space-y-6'>
+            <div>
+              <h2 className='text-2xl font-bold text-gray-900 mb-3'>
+                technical implementation
+              </h2>
+              <p className='text-gray-700 mb-6'>
+                built with modern, industry-standard technologies and best
+                practices.
+              </p>
+            </div>
+
+            <div className='grid md:grid-cols-2 gap-6'>
+              <div>
+                <h3 className='font-semibold text-gray-900 mb-2'>frontend</h3>
+                <ul className='space-y-1 text-sm text-gray-700'>
+                  <li>• react 18 with typescript</li>
+                  <li>• vite for build tooling</li>
+                  <li>• react router for spa navigation</li>
+                  <li>• tailwind css v4 for styling</li>
+                  <li>• responsive design patterns</li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className='font-semibold text-gray-900 mb-2'>backend</h3>
+                <ul className='space-y-1 text-sm text-gray-700'>
+                  <li>• node.js with express</li>
+                  <li>• typescript for type safety</li>
+                  <li>• sqlite3 with better-sqlite3</li>
+                  <li>• restful api design</li>
+                  <li>• database transactions</li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className='font-semibold text-gray-900 mb-2'>
+                  architecture
+                </h3>
+                <ul className='space-y-1 text-sm text-gray-700'>
+                  <li>• mvc pattern</li>
+                  <li>• separation of concerns</li>
+                  <li>• cryptographic hashing (sha-256)</li>
+                  <li>• session management</li>
+                  <li>• error handling & validation</li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className='font-semibold text-gray-900 mb-2'>
+                  demonstrated concepts
+                </h3>
+                <ul className='space-y-1 text-sm text-gray-700'>
+                  <li>• full crud operations</li>
+                  <li>• atomic transactions</li>
+                  <li>• lifecycle management</li>
+                  <li>• privacy-by-design</li>
+                  <li>• data minimisation</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* cta */}
+          <div className='text-center space-y-4 pt-8'>
+            <p className='text-gray-700'>
+              ready to see the deletion process in action?
+            </p>
             <button
-              onClick={handleLogout}
-              disabled={loading}
-              className="px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50"
+              onClick={handleLogoutClick}
+              className='px-8 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium'
             >
-              {loading ? 'logging out...' : 'logout'}
+              logout & delete my data
             </button>
           </div>
         </div>
-      </nav>
-
-      {/* main content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="text-center space-y-6">
-          <h1 className="text-4xl font-bold text-gray-900">welcome to the app!</h1>
-          <p className="text-lg text-gray-600">
-            you're now logged in. when you logout, your data will be permanently deleted.
-          </p>
-          
-          <div className="max-w-2xl mx-auto bg-white border border-gray-200 rounded-lg p-8 mt-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">privacy-by-design</h2>
-            <p className="text-gray-600 mb-4">
-              this application demonstrates privacy-first architecture. your data is:
-            </p>
-            <ul className="text-left space-y-2 text-gray-700">
-              <li>✓ stored temporarily while you're signed in</li>
-              <li>✓ email addresses are hashed (never stored in plain text)</li>
-              <li>✓ automatically deleted when you logout</li>
-              <li>✓ only aggregate counters are preserved</li>
-            </ul>
-          </div>
-        </div>
       </div>
-    </div>
+
+      {/* logout confirmation modal */}
+      <LogoutModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        onConfirm={handleLogoutConfirm}
+        loading={loading}
+      />
+    </>
   );
 }

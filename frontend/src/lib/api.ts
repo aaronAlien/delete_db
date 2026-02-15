@@ -1,4 +1,4 @@
-// api wrapper for backend calls
+// api wrapper for backend
 
 const API_BASE = '/api';
 

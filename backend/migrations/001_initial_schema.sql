@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
     status TEXT NOT NULL CHECK(status IN ('pending', 'confirmed')),
     created_at TEXT NOT NULL,
     confirmed_at TEXT,
+    expires_at TEXT,
     token TEXT UNIQUE NOT NULL
 );
 

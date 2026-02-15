@@ -9,6 +9,7 @@ export interface User {
   status: 'pending' | 'confirmed';
   created_at: string;
   confirmed_at: string | null;
+  expires_at: string | null;
   token: string;
 }
 
@@ -32,12 +33,11 @@ export const createUser = (name: string, email: string) => {
   console.log('creating user:', { id, name, emailHash, token, createdAt }); // debug
 
   const stmt = db.prepare(`
-    INSERT INTO users (id, name, email_hash, status, created_at, confirmed_at, token)
-    VALUES (?, ?, ?, 'pending', ?, NULL, ?)
+    INSERT INTO users (id, name, email_hash, status, created_at, confirmed_at, expires_at, token)
+    VALUES (?, ?, ?, 'pending', ?, NULL, NULL, ?)
   `);
 
-  const result = stmt.run(id, name, emailHash, createdAt, token);
-  console.log('insert result:', result); // debug
+  stmt.run(id, name, emailHash, createdAt, token);
 
   return { id, token };
 };
@@ -48,17 +48,17 @@ export const findUserByToken = (token: string): User | undefined => {
   return stmt.get(token) as User | undefined;
 };
 
-// confirm user - no counter increment
+// confirm user - no counter increment -  set expiry time
 export const confirmUser = (token: string) => {
   const confirmedAt = new Date().toISOString();
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5min
 
-  // just update user status - no counter
   const updateUser = db.prepare(`
     UPDATE users 
-    SET status = 'confirmed', confirmed_at = ?
+    SET status = 'confirmed', confirmed_at = ?, expires_at = ?
     WHERE token = ?
   `);
-  updateUser.run(confirmedAt, token);
+  updateUser.run(confirmedAt, expiresAt, token);
 };
 
 // delete user - increment counter here
@@ -98,3 +98,11 @@ export const emailExists = (email: string): boolean => {
   const result = stmt.get(emailHash);
   return !!result;
 };
+
+// user session expired?
+export const isUserExpired = (token: string) : boolean => {
+  const user = findUserByToken(token);
+  if (!user || !user.expires_at) return false;
+
+  return new Date(user.expires_at) < new Date();
+}

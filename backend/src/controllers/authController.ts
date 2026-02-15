@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { User, createUser, findUserByToken, confirmUser, deleteUser, getCounters, emailExists } from '../models/queries';
+import { User, createUser, findUserByToken, confirmUser, deleteUser, getCounters, emailExists, isUserExpired } from '../models/queries';
 
 // signup
 export const signup = (req: Request, res: Response): void => {
@@ -69,17 +69,58 @@ export const confirm = (req: Request, res: Response): void => {
       return;
     }
 
-    // confirm user and increment counter
+    // confirm user - increment counter - set expiry
     confirmUser(token);
+
+    // get updated user - return expiry time
+    const updatedUser = findUserByToken(token);
 
     res.status(200).json({ 
       message: 'email confirmed',
       token,
-      name: user.name
+      name: updatedUser?.name,
+      expiresAt: updatedUser?.expires_at
     });
   } catch (error) {
     console.error('confirm error:', error);
     res.status(500).json({ error: 'confirmation failed' });
+  }
+};
+
+// check session status
+export const checkSession = (req: Request, res: Response): void => {
+  try {
+    const tokenParam = req.params.token;
+    const token = Array.isArray(tokenParam) ? tokenParam[0] : tokenParam;
+
+    if (!token) {
+      res.status(400).json({ error: 'token required' });
+      return;
+    }
+
+    const user = findUserByToken(token);
+
+    if (!user) {
+      res.status(404).json({ error: 'user not found', expired: true });
+      return;
+    }
+
+    const expired = isUserExpired(token);
+
+    if (expired) {
+      // auto-delete expired user
+      deleteUser(token);
+      res.status(200).json({ expired: true });
+      return;
+    }
+
+    res.status(200).json({ 
+      expired: false,
+      expiresAt: user.expires_at
+    });
+  } catch (error) {
+    console.error('check session error:', error);
+    res.status(500).json({ error: 'failed to check session' });
   }
 };
 
