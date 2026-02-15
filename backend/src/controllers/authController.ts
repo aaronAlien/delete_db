@@ -6,14 +6,16 @@ export const signup = (req: Request, res: Response): void => {
   try {
     const { name, email } = req.body;
 
-    // validate name
-    if (!name || name.trim().length === 0) {
+    console.log('signup request:', { name, email }); // debug log
+
+    // validate name first
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
       res.status(400).json({ error: 'name required' });
       return;
     }
 
-    // validate email
-    if (!email || !email.includes('@')) {
+    // validate email second
+    if (!email || typeof email !== 'string' || !email.includes('@')) {
       res.status(400).json({ error: 'valid email required' });
       return;
     }
