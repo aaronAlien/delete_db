@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import LogoutModal from "../components/LogoutModal";
+import { useDatabaseWidget } from "../context/DatabaseWidgetContext";
 
 export default function Homepage() {
   const { token } = useParams();
@@ -10,6 +11,7 @@ export default function Homepage() {
   const [showModal, setShowModal] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
+  const { isEnabled, enableWidget } = useDatabaseWidget();
 
   // check session - set expiry time
   useEffect(() => {
@@ -84,6 +86,8 @@ export default function Homepage() {
   return (
     <>
       <div className='min-h-screen bg-gray-50'>
+         {/* add padding top on mobile for the widget banner */}
+        <div className="md:pt-0 pt-12">
         {/* navbar */}
         <nav className='bg-white border-b border-gray-200'>
           <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
@@ -124,6 +128,24 @@ export default function Homepage() {
               you can logout manually.
             </p>
           </div>
+
+          {/* database monitor prompt */}
+            {!isEnabled && (
+              <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-6 text-center">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  want to see the database in real-time?
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  enable the live monitor to watch your data being created and deleted in real-time
+                </p>
+                <button
+                  onClick={enableWidget}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                >
+                  enable live monitor →
+                </button>
+              </div>
+            )}
 
           {/* explain project */}
           <div className='bg-white border border-gray-200 rounded-lg p-8 space-y-6'>
@@ -259,6 +281,7 @@ export default function Homepage() {
               logout & delete my data
             </button>
           </div>
+        </div>
         </div>
       </div>
 

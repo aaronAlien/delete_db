@@ -5,10 +5,15 @@ import Confirm from './pages/Confirm';
 import Thanks from './pages/Thanks';
 import Homepage from './pages/Homepage';
 import Deleted from './pages/Deleted';
+import Admin from './pages/Admin';
+import DatabaseWidget from './components/DatabaseWidget';
+import { DatabaseWidgetProvider, useDatabaseWidget } from './context/DatabaseWidgetContext';
 
-function App() {
+function AppRoutes() {
+  const { isEnabled, disableWidget } = useDatabaseWidget();
+
   return (
-    <BrowserRouter>
+    <>
       <Routes>
         <Route path="/" element={<Signup />} />
         <Route path="/email/:token" element={<Email />} />
@@ -16,8 +21,21 @@ function App() {
         <Route path="/thanks/:token" element={<Thanks />} />
         <Route path="/app/:token" element={<Homepage />} />
         <Route path="/deleted" element={<Deleted />} />
+        <Route path="/admin" element={<Admin />} />
       </Routes>
-    </BrowserRouter>
+      
+      <DatabaseWidget isEnabled={isEnabled} onClose={disableWidget} />
+    </>
+  );
+}
+
+function App() {
+  return (
+    <DatabaseWidgetProvider>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </DatabaseWidgetProvider>
   );
 }
 
