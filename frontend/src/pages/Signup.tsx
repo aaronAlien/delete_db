@@ -7,7 +7,7 @@ export default function Signup() {
   const { isEnabled, enableWidget } = useDatabaseWidget();
 
   return (
-    <div className='min-h-screen bg-gradient-to-br from-primary-50 via-accent-50 to-purple-50 flex flex-col items-center justify-center p-4'>
+    <div className='min-h-screen sm:mt-0 mt-12 bg-gradient-to-br from-primary-50 via-accent-50 to-purple-50 flex flex-col items-center justify-center p-4'>
       <div className='w-full max-w-md space-y-8'>
         {/* illustration */}
         <div className='text-center'>
