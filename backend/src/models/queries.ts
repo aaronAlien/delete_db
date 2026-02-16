@@ -106,3 +106,45 @@ export const isUserExpired = (token: string) : boolean => {
 
   return new Date(user.expires_at) < new Date();
 }
+
+// cleanup - expired or abandoned users
+export const cleanupExpiredUsers = () => {
+  const now = new Date().toISOString();
+  
+  const transaction = db.transaction(() => {
+    // delete confirmed users past their expiry 
+    const deleteExpired = db.prepare(`
+      DELETE FROM users 
+      WHERE status = 'confirmed' 
+      AND expires_at IS NOT NULL 
+      AND expires_at < ?
+    `);
+    const expiredResult = deleteExpired.run(now);
+
+    // delete pending (unconfirmed) users after 10min
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const deleteAbandoned = db.prepare(`
+      DELETE FROM users 
+      WHERE status = 'pending' 
+      AND created_at < ?
+    `);
+    const abandonedResult = deleteAbandoned.run(tenMinutesAgo);
+
+    // increment counter for expired sessions - not abandoned
+    if (expiredResult.changes > 0) {
+      const updateCounter = db.prepare(`
+        UPDATE counters 
+        SET count = count + ?, updated_at = datetime('now')
+        WHERE metric = 'completed_cycles'
+      `);
+      updateCounter.run(expiredResult.changes);
+    }
+
+    return {
+      expiredDeleted: expiredResult.changes,
+      abandonedDeleted: abandonedResult.changes,
+    };
+  });
+
+  return transaction();
+};

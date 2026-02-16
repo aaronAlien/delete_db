@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 
 export default function Thanks() {
   const { token } = useParams();
@@ -12,15 +12,25 @@ export default function Thanks() {
     <div className='min-h-screen bg-gradient-to-br from-primary-50 via-accent-50 to-purple-50 flex flex-col items-center justify-center p-4'>
       <div className='md:pt-0 pt-16'>
         <div className='w-full max-w-md bg-white rounded-2xl shadow-lg p-12 text-center space-y-6'>
-          <div className='text-7xl mb-4'>🎉</div>
+          <div className='rounded-full w-[70%] h-auto block mx-auto'>
+            <img src="/thanks.png" alt="" />
+          </div>
 
-          <div>
-            <h1 className='text-3xl font-bold text-gray-900 mb-3'>
-              thanks for signing up!
+          <div className="space-y-3">
+            <h1 className='text-3xl font-bold text-gray-900'>
+              Thanks for signing up!
             </h1>
             <p className='text-gray-600'>
               your account has been created successfully
             </p>
+            {/* admin */}
+            <Link
+              to='/admin'
+              target='_blank'
+              className='text-sm font-semibold text-accent-600 hover:text-accent-800'
+            >
+              view live database →
+            </Link>
           </div>
 
           <div className='bg-primary-50 border border-primary-200 rounded-xl p-4'>

@@ -7,8 +7,8 @@ export default function Signup() {
   const { isEnabled, enableWidget } = useDatabaseWidget();
 
   return (
-    <div className='min-h-screen sm:mt-0 mt-12 bg-gradient-to-br from-primary-50 via-accent-50 to-purple-50 flex flex-col items-center justify-center p-4'>
-      <div className='w-full max-w-md space-y-8'>
+    <div className='min-h-screen bg-gradient-to-br from-primary-50 via-accent-50 to-purple-50 flex flex-col items-center justify-center p-4'>
+      <div className='w-full max-w-md space-y-8 sm:mt-0 mt-12'>
         {/* illustration */}
         <div className='text-center'>
           <div className='w-48 h-48 mx-auto mb-6 bg-gradient-to-br from-primary-200 to-accent-200 rounded-full flex items-center justify-center'>
@@ -58,6 +58,7 @@ export default function Signup() {
           <div className='text-center pt-2 mt-2'>
             <Link
               to='/admin'
+              target="_blank"
               className='text-sm font-semibold text-accent-600 hover:text-accent-800'
             >
               view live database →

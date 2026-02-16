@@ -192,6 +192,10 @@ export default function Admin() {
             </li>
             <li className="flex items-start gap-2">
               <span className="text-primary-600 font-bold">•</span>
+              <span>auto cleanup deletes pending users afetr 10 minutes</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-primary-600 font-bold">•</span>
               <span>email addresses are hashed using sha-256 and not shown</span>
             </li>
           </ul>

@@ -95,7 +95,7 @@ export default function Homepage() {
             <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
               <div className='flex justify-between items-center h-16'>
                 <div className='text-xl font-bold text-gray-900'>
-                  privacy app
+                  DeleteDB
                 </div>
 
                 <div className='flex items-center gap-4'>
@@ -125,10 +125,10 @@ export default function Homepage() {
             {/* welcome section */}
             <div className='text-center space-y-4'>
               <h1 className='text-4xl font-bold text-gray-900'>
-                welcome to the app!
+                Welcome to the DelDB app!
               </h1>
               <p className='text-lg text-gray-600'>
-                you're now logged in. your session will expire in 5 minutes, or
+                You're now logged in.<br /> Your session will expire in 5 minutes, or
                 you can logout manually.
               </p>
             </div>
@@ -211,7 +211,7 @@ export default function Homepage() {
             <div className='bg-blue-50 border border-blue-200 rounded-lg p-8 space-y-6'>
               <div>
                 <h2 className='text-2xl font-bold text-gray-900 mb-3'>
-                  Technical Implementation
+                  Technical Implementations
                 </h2>
                 <p className='flex flex-wrap gap-3 text-xl text-gray-700 mb-6'>
                   <SiTypescript title='TypeScript' />
