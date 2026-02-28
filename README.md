@@ -2,7 +2,9 @@
 
 A full stack demonstration of privacy by design with automatic data deletion, real-time monitoring and temporary sessions.
 
-> Docker deployment in progress. Current version uses SQLite for local development.
+> **WIP**  
+> Containerize using Docker - _complete_
+> Demployment - _in progress_
 
 ## Key Features
 
@@ -29,35 +31,44 @@ Signup → Email Confirmation → 5-Min Session → Logout/Expiry → Data Delet
 ## 🛠️ Tech 
 
 **Frontend:** React | TypeScript | Vite | Tailwind CSS | React Router  
-**Backend:** Node.js | Express | TypeScript | SQLite3 | RESTful API  
+**Backend:** Node.js | Express | TypeScript | PostgreSQL | RESTful API  
 **Features:** Database transactions | Session management | Responsive design
 
 ---
 
-## 📦 Local Development
+## Local Development
 
 ### Prerequisites
 - Node.js >= 18.0.0
-- npm
+- Docker & Docker Compose
 
-### Setup
+### Setup with Docker 
 ```bash
 # clone repository
-git clone https://github.com/aaronAlien/delete_db
+git clone https://https://github.com/aaronAlien/delete_db.git
 cd delete_db
 
-# backend
-cd backend
-npm install
-cp .env.example .env
-npm run dev  # runs on http://localhost:3001
+# start backend + database with docker
+docker-compose up
 
-# frontend (new terminal)
+# in a new terminal, start frontend
 cd frontend
 npm install
-npm run dev  # runs on http://localhost:5173
+npm run dev
 ```
 
+**Services:**
+- Backend: http://localhost:3001
+- Frontend: http://localhost:5173
+- PostgreSQL: localhost:5432
+
+**Stop services:**
+```bash
+docker-compose down
+
+# stop and remove volumes 
+docker-compose down -v
+```
 ## Usage
 
 1. **Enable Live Monitor**: Click prompt for wdiget or admin dashboard to watch database in real-time
