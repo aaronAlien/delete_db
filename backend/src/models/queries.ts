@@ -1,7 +1,7 @@
-import db from '../config/database';
+import pool from '../config/database';
 import crypto from 'crypto';
 
-// user interface - esported
+// user interface
 export interface User {
   id: string;
   name: string;
@@ -13,138 +13,149 @@ export interface User {
   token: string;
 }
 
-// helper - hash email
+// helper: hash email
 export const hashEmail = (email: string): string => {
   return crypto.createHash('sha256').update(email.toLowerCase()).digest('hex');
 };
 
-// helper - generate token
+// helper: generate token
 export const generateToken = (): string => {
   return crypto.randomBytes(32).toString('hex');
 };
 
 // create user
-export const createUser = (name: string, email: string) => {
+export const createUser = async (name: string, email: string) => {
   const id = crypto.randomUUID();
   const emailHash = hashEmail(email);
   const token = generateToken();
   const createdAt = new Date().toISOString();
 
-  console.log('creating user:', { id, name, emailHash, token, createdAt }); // debug
+  const query = `
+    INSERT INTO users (id, name, email_hash, status, created_at, token)
+    VALUES ($1, $2, $3, 'pending', $4, $5)
+    RETURNING id, token
+  `;
 
-  const stmt = db.prepare(`
-    INSERT INTO users (id, name, email_hash, status, created_at, confirmed_at, expires_at, token)
-    VALUES (?, ?, ?, 'pending', ?, NULL, NULL, ?)
-  `);
-
-  stmt.run(id, name, emailHash, createdAt, token);
-
-  return { id, token };
+  const result = await pool.query(query, [id, name, emailHash, createdAt, token]);
+  return result.rows[0];
 };
 
 // find user by token
-export const findUserByToken = (token: string): User | undefined => {
-  const stmt = db.prepare('SELECT * FROM users WHERE token = ?');
-  return stmt.get(token) as User | undefined;
+export const findUserByToken = async (token: string): Promise<User | undefined> => {
+  const query = 'SELECT * FROM users WHERE token = $1';
+  const result = await pool.query(query, [token]);
+  return result.rows[0];
 };
 
-// confirm user - no counter increment -  set expiry time
-export const confirmUser = (token: string) => {
+// confirm user (set expiry time: 5 minutes from now)
+export const confirmUser = async (token: string) => {
   const confirmedAt = new Date().toISOString();
-  const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5min
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
-  const updateUser = db.prepare(`
+  const query = `
     UPDATE users 
-    SET status = 'confirmed', confirmed_at = ?, expires_at = ?
-    WHERE token = ?
-  `);
-  updateUser.run(confirmedAt, expiresAt, token);
+    SET status = 'confirmed', confirmed_at = $1, expires_at = $2
+    WHERE token = $3
+  `;
+
+  await pool.query(query, [confirmedAt, expiresAt, token]);
 };
 
-// delete user - increment counter here
-export const deleteUser = (token: string) => {
-  // use transaction to delete user and increment counter
-  const transaction = db.transaction(() => {
+// delete user (increment counter here)
+export const deleteUser = async (token: string) => {
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+
     // delete user
-    const deleteStmt = db.prepare('DELETE FROM users WHERE token = ?');
-    deleteStmt.run(token);
+    await client.query('DELETE FROM users WHERE token = $1', [token]);
 
     // increment completed cycles counter
-    const updateCounter = db.prepare(`
+    await client.query(`
       UPDATE counters 
-      SET count = count + 1, updated_at = datetime('now')
+      SET count = count + 1, updated_at = NOW()
       WHERE metric = 'completed_cycles'
     `);
-    updateCounter.run();
-  });
 
-  transaction();
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 // get counters
-export const getCounters = () => {
-  const stmt = db.prepare('SELECT metric, count FROM counters');
-  const rows = stmt.all() as Array<{ metric: string; count: number }>;
+export const getCounters = async () => {
+  const query = 'SELECT metric, count FROM counters';
+  const result = await pool.query(query);
   
   return {
-    completedCycles: rows.find(r => r.metric === 'completed_cycles')?.count || 0,
+    completedCycles: result.rows.find(r => r.metric === 'completed_cycles')?.count || 0,
   };
 };
 
 // check if email exists
-export const emailExists = (email: string): boolean => {
+export const emailExists = async (email: string): Promise<boolean> => {
   const emailHash = hashEmail(email);
-  const stmt = db.prepare('SELECT id FROM users WHERE email_hash = ?');
-  const result = stmt.get(emailHash);
-  return !!result;
+  const query = 'SELECT id FROM users WHERE email_hash = $1';
+  const result = await pool.query(query, [emailHash]);
+  return result.rows.length > 0;
 };
 
-// user session expired?
-export const isUserExpired = (token: string) : boolean => {
-  const user = findUserByToken(token);
+// check if user session expired
+export const isUserExpired = async (token: string): Promise<boolean> => {
+  const user = await findUserByToken(token);
   if (!user || !user.expires_at) return false;
-
-  return new Date(user.expires_at) < new Date();
-}
-
-// cleanup - expired or abandoned users
-export const cleanupExpiredUsers = () => {
-  const now = new Date().toISOString();
   
-  const transaction = db.transaction(() => {
-    // delete confirmed users past their expiry 
-    const deleteExpired = db.prepare(`
+  return new Date(user.expires_at) < new Date();
+};
+
+// cleanup expired and abandoned users
+export const cleanupExpiredUsers = async () => {
+  const client = await pool.connect();
+  const now = new Date().toISOString();
+  const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+
+  try {
+    await client.query('BEGIN');
+
+    // delete confirmed users past their expiry time
+    const expiredResult = await client.query(`
       DELETE FROM users 
       WHERE status = 'confirmed' 
       AND expires_at IS NOT NULL 
-      AND expires_at < ?
-    `);
-    const expiredResult = deleteExpired.run(now);
+      AND expires_at < $1
+    `, [now]);
 
-    // delete pending (unconfirmed) users after 10min
-    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-    const deleteAbandoned = db.prepare(`
+    // delete pending users older than 10 minutes (never confirmed)
+    const abandonedResult = await client.query(`
       DELETE FROM users 
       WHERE status = 'pending' 
-      AND created_at < ?
-    `);
-    const abandonedResult = deleteAbandoned.run(tenMinutesAgo);
+      AND created_at < $1
+    `, [tenMinutesAgo]);
 
-    // increment counter for expired sessions - not abandoned
-    if (expiredResult.changes > 0) {
-      const updateCounter = db.prepare(`
+    // increment counter for each expired session (not for abandoned signups)
+    if (expiredResult.rowCount && expiredResult.rowCount > 0) {
+      await client.query(`
         UPDATE counters 
-        SET count = count + ?, updated_at = datetime('now')
+        SET count = count + $1, updated_at = NOW()
         WHERE metric = 'completed_cycles'
-      `);
-      updateCounter.run(expiredResult.changes);
+      `, [expiredResult.rowCount]);
     }
 
-    return {
-      expiredDeleted: expiredResult.changes,
-      abandonedDeleted: abandonedResult.changes,
-    };
-  });
+    await client.query('COMMIT');
 
-  return transaction();
+    return {
+      expiredDeleted: expiredResult.rowCount || 0,
+      abandonedDeleted: abandonedResult.rowCount || 0,
+    };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 };

@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
 import { User, createUser, findUserByToken, confirmUser, deleteUser, getCounters, emailExists, isUserExpired } from '../models/queries';
-import db from '../config/database';
+import pool from '../config/database';
 
 // signup
-export const signup = (req: Request, res: Response): void => {
+export const signup = async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, email } = req.body;
 
@@ -11,33 +11,28 @@ export const signup = (req: Request, res: Response): void => {
 
     // validate name first
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
-      console.log('validation failed: name required');
       res.status(400).json({ error: 'name required' });
       return;
     }
 
     // validate email second
     if (!email || typeof email !== 'string' || !email.includes('@')) {
-      console.log('validation failed: valid email required');
       res.status(400).json({ error: 'valid email required' });
       return;
     }
 
     // check if email already exists
-    if (emailExists(email)) {
-      console.log('validation failed: email already registered');
+    if (await emailExists(email)) {
       res.status(409).json({ error: 'email already registered' });
       return;
     }
 
     // create user
-    console.log('about to create user...');
-    const { token } = createUser(name.trim(), email);
-    console.log('user created successfully, token:', token);
+    const result = await createUser(name.trim(), email);
 
     res.status(201).json({ 
       message: 'user created',
-      token 
+      token: result.token
     });
   } catch (error) {
     console.error('signup error:', error);
@@ -46,11 +41,9 @@ export const signup = (req: Request, res: Response): void => {
 };
 
 // confirm email
-export const confirm = (req: Request, res: Response): void => {
+export const confirm = async (req: Request, res: Response): Promise<void> => {
   try {
     const tokenParam = req.params.token;
-    
-    // ensure token is string, not array
     const token = Array.isArray(tokenParam) ? tokenParam[0] : tokenParam;
 
     if (!token) {
@@ -58,7 +51,7 @@ export const confirm = (req: Request, res: Response): void => {
       return;
     }
 
-    const user = findUserByToken(token);
+    const user = await findUserByToken(token);
 
     if (!user) {
       res.status(404).json({ error: 'invalid token' });
@@ -66,15 +59,15 @@ export const confirm = (req: Request, res: Response): void => {
     }
 
     if (user.status === 'confirmed') {
-      res.status(400).json({ error: 'user already confirmed' });
+      res.status(400).json({ error: 'already confirmed' });
       return;
     }
 
-    // confirm user - increment counter - set expiry
-    confirmUser(token);
+    // confirm user and set expiry
+    await confirmUser(token);
 
-    // get updated user - return expiry time
-    const updatedUser = findUserByToken(token);
+    // get updated user to return expiry time
+    const updatedUser = await findUserByToken(token);
 
     res.status(200).json({ 
       message: 'email confirmed',
@@ -89,7 +82,7 @@ export const confirm = (req: Request, res: Response): void => {
 };
 
 // check session status
-export const checkSession = (req: Request, res: Response): void => {
+export const checkSession = async (req: Request, res: Response): Promise<void> => {
   try {
     const tokenParam = req.params.token;
     const token = Array.isArray(tokenParam) ? tokenParam[0] : tokenParam;
@@ -99,18 +92,18 @@ export const checkSession = (req: Request, res: Response): void => {
       return;
     }
 
-    const user = findUserByToken(token);
+    const user = await findUserByToken(token);
 
     if (!user) {
       res.status(404).json({ error: 'user not found', expired: true });
       return;
     }
 
-    const expired = isUserExpired(token);
+    const expired = await isUserExpired(token);
 
     if (expired) {
       // auto-delete expired user
-      deleteUser(token);
+      await deleteUser(token);
       res.status(200).json({ expired: true });
       return;
     }
@@ -126,11 +119,9 @@ export const checkSession = (req: Request, res: Response): void => {
 };
 
 // logout (delete user)
-export const logout = (req: Request, res: Response): void => {
+export const logout = async (req: Request, res: Response): Promise<void> => {
   try {
     const tokenBody = req.body.token;
-    
-    // ensure token is string, not array
     const token = Array.isArray(tokenBody) ? tokenBody[0] : tokenBody;
 
     if (!token) {
@@ -138,7 +129,7 @@ export const logout = (req: Request, res: Response): void => {
       return;
     }
 
-    const user = findUserByToken(token);
+    const user = await findUserByToken(token);
 
     if (!user) {
       res.status(404).json({ error: 'user not found' });
@@ -146,7 +137,7 @@ export const logout = (req: Request, res: Response): void => {
     }
 
     // delete user and increment counter
-    deleteUser(token);
+    await deleteUser(token);
 
     res.status(200).json({ message: 'user deleted' });
   } catch (error) {
@@ -156,9 +147,9 @@ export const logout = (req: Request, res: Response): void => {
 };
 
 // get counters
-export const counters = (req: Request, res: Response): void => {
+export const counters = async (req: Request, res: Response): Promise<void> => {
   try {
-    const data = getCounters();
+    const data = await getCounters();
     res.status(200).json(data);
   } catch (error) {
     console.error('counters error:', error);
@@ -166,13 +157,13 @@ export const counters = (req: Request, res: Response): void => {
   }
 };
 
-// admin: get all users - debug
-export const adminGetUsers = (req: Request, res: Response): void => {
+// admin: get all users (for debugging)
+export const adminGetUsers = async (req: Request, res: Response): Promise<void> => {
   try {
-    const stmt = db.prepare('SELECT id, name, status, created_at, confirmed_at, expires_at FROM users');
-    const users = stmt.all();
+    const query = 'SELECT id, name, status, created_at, confirmed_at, expires_at FROM users';
+    const result = await pool.query(query);
     
-    res.status(200).json({ users });
+    res.status(200).json({ users: result.rows });
   } catch (error) {
     console.error('admin get users error:', error);
     res.status(500).json({ error: 'failed to fetch users' });
