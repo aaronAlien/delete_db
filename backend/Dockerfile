@@ -5,17 +5,17 @@ WORKDIR /app
 # copy package files
 COPY package*.json ./
 
-# install dependencies
-RUN npm ci --only=production
+# install ALL dependencies
+RUN npm install
 
 # copy source code
 COPY . .
 
-# install dev dependencies for build
-RUN npm install -D typescript @types/node
-
 # build typescript
 RUN npm run build
+
+# remove devDependencies after build
+RUN npm prune --production
 
 # expose port
 EXPOSE 3001
