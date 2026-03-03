@@ -2,23 +2,21 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# copy package files
-COPY package*.json ./
+# debug: list files???
+RUN ls -la
 
-# install ALL dependencies
-RUN npm install
-
-# copy source code
+# copy 
 COPY . .
 
-# build typescript
+# debug: list again????
+RUN ls -la
+
+# install dependencies
+RUN npm install
+
+# build
 RUN npm run build
 
-# remove devDependencies after build
-RUN npm prune --production
-
-# expose port
 EXPOSE 3001
 
-# start app
 CMD ["node", "dist/server.js"]
