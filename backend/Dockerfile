@@ -2,7 +2,7 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# copy package
+# copy package files first
 COPY package*.json ./
 
 # install dependencies
@@ -11,7 +11,7 @@ RUN npm install
 # copy everything else
 COPY . .
 
-# build tsc
+# build typescript
 RUN npm run build
 
 # remove dev dependencies
