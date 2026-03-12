@@ -17,14 +17,16 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(new Date());
 
+  const API_BASE = import.meta.env.VITE_API_URL || '/api';
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      const usersResponse = await fetch('/api/admin/users');
+      const usersResponse = await fetch(`${API_BASE}/admin/users`);
       const usersData = await usersResponse.json();
       setUsers(usersData.users);
 
-      const countersResponse = await fetch('/api/counters');
+      const countersResponse = await fetch(`${API_BASE}/counters`);
       const countersData = await countersResponse.json();
       setCounters(countersData);
 

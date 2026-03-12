@@ -15,13 +15,15 @@ export default function Homepage() {
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const { isEnabled, enableWidget } = useDatabaseWidget();
 
+  const API_BASE = import.meta.env.VITE_API_URL || '/api';
+
   // check session - set expiry time
   useEffect(() => {
     const checkSession = async () => {
       if (!token) return;
 
       try {
-        const response = await fetch(`/api/session/${token}`);
+        const response = await fetch(`${API_BASE}/session/${token}`);
         const data = await response.json();
 
         if (data.expired) {
