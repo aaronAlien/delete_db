@@ -58,6 +58,7 @@ export default function Signup() {
           <div className='text-center pt-2 mt-2'>
             <Link
               to='/admin'
+              target="_blank" rel="noopener noreferrer"
               className='text-sm font-semibold text-accent-600 hover:text-accent-800'
             >
               view live database →

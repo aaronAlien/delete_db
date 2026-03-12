@@ -116,7 +116,7 @@ export default function FakeEmail() {
               <br />
               <Link
               to='/admin'
-              target="_blank"
+              target="_blank" rel="noopener noreferrer"
               className='text-sm font-semibold text-accent-600 hover:text-accent-800'
             >
               view live database →
