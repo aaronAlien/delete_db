@@ -1,82 +1,75 @@
 # DeleteDB Signup Flow
 
-A full stack demonstration of privacy by design with automatic data deletion, real-time monitoring and temporary sessions.
+A **privacy-first full-stack demo** showing how user data can be handled responsibly through **temporary storage, automatic deletion, and real-time monitoring**.
 
-> **WIP**  
-> Containerize using Docker - _complete_
-> Demployment - _in progress_
-
-## Key Features
-
-- **Automatic Data Deletion**: User data removed after 5 minutes or manual logout
-- **Real-Time Monitoring**: Live database widget and admin dashboard show data creation and deletion
-- **Email Hashing**: SHA-256 encryption before storage
-- **Session Management**: Countdown timer with automatic expiry
-- **Transaction Safety**: Atomic operations prevent data inconsistency
-- **Privacy Metrics**: Only anonymized aggregate counters persist
-
-## Architecture
-
-### User Flow
-```
-Signup → Email Confirmation → 5-Min Session → Logout/Expiry → Data Deleted
-```
-
-### Privacy Implementation
-- **Temporary Storage**: Users exist only during active session
-- **Automatic Expiry**: Background cleanup removes expired/abandoned users 
-- **Minimal Data**: Only essential fields stored (name, email hash, timestamps)
-- **Aggregate Only**: Post-deletion, only completion counters remain
-
-## 🛠️ Tech 
-
-**Frontend:** React | TypeScript | Vite | Tailwind CSS | React Router  
-**Backend:** Node.js | Express | TypeScript | PostgreSQL | RESTful API  
-**Features:** Database transactions | Session management | Responsive design
+The application simulates a signup flow where user records exist **only during an active session** and are automatically deleted afterwards.
 
 ---
 
-## Local Development
+## ✨ Overview
 
-### Prerequisites
-- Node.js >= 18.0.0
-- Docker & Docker Compose
+This project explores ther **ephemeral user data** approach. User information exists **only while needed**, then is automatically removed once the session ends.
 
-### Setup with Docker 
-```bash
-# clone repository
-git clone https://https://github.com/aaronAlien/delete_db.git
-cd delete_db
+A **live database monitor** widget and /admin page makes this lifecycle visible, showing when records are created and deleted in real time.
 
-# start backend + database with docker
-docker-compose up
+---
 
-# in a new terminal, start frontend
-cd frontend
-npm install
-npm run dev
-```
+## User Flow
+Signup → Email Confirmation → 5-Minute Session → Logout / Expiry → Data Deleted
 
-**Services:**
-- Backend: http://localhost:3001
-- Frontend: http://localhost:5173
-- PostgreSQL: localhost:5432
 
-**Stop services:**
-```bash
-docker-compose down
+1. User signs up with name and email  
+2. Simulated email confirmation completes signup  
+3. Temporary session begins (5-minute lifetime)  
+4. Database monitor shows active user record  
+5. Session expires or user logs out  
+6. User data is deleted automatically
+7. Auto cleanup deletes pending users afetr 10 minutes
+8. Only anonymised aggregate counters remain
 
-# stop and remove volumes 
-docker-compose down -v
-```
-## Usage
+---
 
-1. **Enable Live Monitor**: Click prompt for wdiget or admin dashboard to watch database in real-time
-2. **Sign Up**: Enter name and email (_real information not required, only correct format_)
-3. **Confirm Email**: Click button in simulated inbox
-4. **Session Homepage**: 5-minute countdown begins
-5. **Observe Database**: Widget/admin shows user exists
-6. **Logout**: Click logout button (or await timer countdown)
-7. **Verify Deletion**: Widget/admin confirms database is empty
+## Privacy Design
 
-> Built to demonstrate privacy first development principles and responsible data handling.
+- **Temporary Data Storage** — users exist only during an active session  
+- **Automatic Expiry** — background cleanup removes expired sessions  
+- **Minimal Data Collection** — only name, hashed email, and timestamps stored  
+- **Email Hashing** — SHA-256 hashing before database storage  
+- **Aggregate Metrics Only** — anonymised counters persist after deletion
+
+---
+
+## 🛠 Tech Stack
+
+**Frontend**  
+React · Vite · Tailwind CSS · React Router
+
+**Backend**  
+Node.js · Express · PostgreSQL
+
+**Infrastructure**  
+Docker · Docker Compose · Vercel · Railway 
+
+---
+
+## Technical Highlights
+
+- **TypeScript** across frontend and backend  
+- **RESTful API architecture** separating client and server  
+- **Session lifecycle management** with automatic expiry  
+- **Database transactions** to maintain data consistency  
+- **Containerised development environment** using Docker  
+- **Responsive mobile-first UI** built with Tailwind CSS
+
+---
+
+## Purpose
+
+This project demonstrates:
+
+- privacy first application design  
+- responsible data lifecycle management  
+- modern full-stack development practices  
+- production-style architecture with containerisation
+
+Built as a **portfolio project to explore privacy-by-design principles in modern web applications.**
