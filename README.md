@@ -48,7 +48,9 @@ React · Vite · Tailwind CSS · React Router
 Node.js · Express · PostgreSQL
 
 **Infrastructure**  
-Docker · Docker Compose · Vercel · Railway 
+Docker · Docker Compose 
+
+**Deployment** — frontend deployed on Vercel, backend API hosted on Railway
 
 ---
 
